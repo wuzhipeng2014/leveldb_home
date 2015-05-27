@@ -129,13 +129,14 @@ LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
     dst = new char[needed];
   }
   start_ = dst;
-  dst = EncodeVarint32(dst, usize + 8);
-  kstart_ = dst;
+  dst = EncodeVarint32(dst, usize + 8);  //返回存储（usize+8）后的下一位地址
+  kstart_ = dst;                         //kstart_记录user_key数据开始存储的地址，由于usize+8经encodeVarint32转换后的位数不确定，
+										//所以需要记录user_key.data开始存储的位置
   memcpy(dst, user_key.data(), usize);
   dst += usize;
   EncodeFixed64(dst, PackSequenceAndType(s, kValueTypeForSeek));
   dst += 8;
-  end_ = dst;
+  end_ = dst;                           //end记录了数据最后一个位置
 }
 
 }  // namespace leveldb

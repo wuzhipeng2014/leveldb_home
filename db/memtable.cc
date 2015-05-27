@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/memtable.h"
-#include "db/dbformat.h"
-#include "leveldb/comparator.h"
-#include "leveldb/env.h"
-#include "leveldb/iterator.h"
-#include "util/coding.h"
+#include "../db/memtable.h"
+#include "../db/dbformat.h"
+#include "../include/leveldb/comparator.h"
+#include "../include/leveldb/env.h"
+#include "../include/leveldb/iterator.h"
+#include "../util/coding.h"
 
 namespace leveldb {
 
@@ -108,6 +108,7 @@ void MemTable::Add(SequenceNumber s, ValueType type,
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
+  //重点看看seek方法是如何实现的
   iter.Seek(memkey.data());
   if (iter.Valid()) {
     // entry format is:

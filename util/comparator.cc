@@ -4,10 +4,10 @@
 
 #include <algorithm>
 #include <stdint.h>
-#include "leveldb/comparator.h"
-#include "leveldb/slice.h"
-#include "port/port.h"
-#include "util/logging.h"
+#include "../include/leveldb/comparator.h"
+#include "../include/leveldb/slice.h"
+#include "../port/port.h"
+#include "../util/logging.h"
 
 namespace leveldb {
 
@@ -40,6 +40,8 @@ class BytewiseComparatorImpl : public Comparator {
     if (diff_index >= min_length) {
       // Do not shorten if one string is a prefix of the other
     } else {
+		//尝试执行(*start)[diff_index]++;
+		//执行上述++的条件是if语句中的两个条件
       uint8_t diff_byte = static_cast<uint8_t>((*start)[diff_index]);
       if (diff_byte < static_cast<uint8_t>(0xff) &&
           diff_byte + 1 < static_cast<uint8_t>(limit[diff_index])) {
