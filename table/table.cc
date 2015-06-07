@@ -44,12 +44,16 @@ Status Table::Open(const Options& options,
                    uint64_t size,
                    Table** table) {
   *table = NULL;
+  //kEncodedLength是footer的长度，包括两个block length和一个magic number
   if (size < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
   }
 
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
+
+  //randomaccessFile的函数原型 
+  //virtual Status Read(uint64_t offset, size_t n, Slice* result, char* scratch) const
   Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
                         &footer_input, footer_space);
   if (!s.ok()) return s;
@@ -66,6 +70,7 @@ Status Table::Open(const Options& options,
     if (options.paranoid_checks) {
       opt.verify_checksums = true;
     }
+	//读取index_handle
     s = ReadBlock(file, opt, footer.index_handle(), &contents);
     if (s.ok()) {
       index_block = new Block(contents);
@@ -84,6 +89,7 @@ Status Table::Open(const Options& options,
     rep->filter_data = NULL;
     rep->filter = NULL;
     *table = new Table(rep);
+	//读取metaindex_handle
     (*table)->ReadMeta(footer);
   } else {
     if (index_block) delete index_block;
@@ -121,6 +127,7 @@ void Table::ReadMeta(const Footer& footer) {
   delete meta;
 }
 
+//根据指定的偏移和大小，读取filter
 void Table::ReadFilter(const Slice& filter_handle_value) {
   Slice v = filter_handle_value;
   BlockHandle filter_handle;

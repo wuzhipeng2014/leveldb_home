@@ -26,13 +26,13 @@
 //     num_restarts: uint32
 // restarts[i] contains the offset within the block of the ith restart point.
 
-#include "table/block_builder.h"
+#include "../table/block_builder.h"
 
 #include <algorithm>
 #include <assert.h>
-#include "leveldb/comparator.h"
-#include "leveldb/table_builder.h"
-#include "util/coding.h"
+#include "../include/leveldb/comparator.h"
+#include "../include/leveldb/table_builder.h"
+#include "../util/coding.h"
 
 namespace leveldb {
 
@@ -76,14 +76,14 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   assert(counter_ <= options_->block_restart_interval);
   assert(buffer_.empty() // No values yet?
          || options_->comparator->Compare(key, last_key_piece) > 0);
-  size_t shared = 0;
+  size_t shared = 0;            //共享内容的长度
   if (counter_ < options_->block_restart_interval) {
     // See how much sharing to do with previous string
     const size_t min_length = std::min(last_key_piece.size(), key.size());
     while ((shared < min_length) && (last_key_piece[shared] == key[shared])) {
       shared++;
     }
-  } else {
+  } else {  //已经达到了设置新的重启点的条件
     // Restart compression
     restarts_.push_back(buffer_.size());
     counter_ = 0;

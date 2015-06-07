@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/table_builder.h"
+#include "../include/leveldb/table_builder.h"
 
 #include <assert.h>
-#include "leveldb/comparator.h"
-#include "leveldb/env.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/options.h"
-#include "table/block_builder.h"
-#include "table/filter_block.h"
-#include "table/format.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../include/leveldb/comparator.h"
+#include "../include/leveldb/env.h"
+#include "../include/leveldb/filter_policy.h"
+#include "../include/leveldb/options.h"
+#include "../table/block_builder.h"
+#include "../table/filter_block.h"
+#include "../table/format.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
 namespace leveldb {
 
@@ -97,24 +97,25 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
 
-  if (r->pending_index_entry) {
+  if (r->pending_index_entry) {  //pending_index_entry为true表明遇到了datablock的第一个k/v
     assert(r->data_block.empty());
     r->options.comparator->FindShortestSeparator(&r->last_key, key);
     std::string handle_encoding;
-    r->pending_handle.EncodeTo(&handle_encoding);
-    r->index_block.Add(r->last_key, Slice(handle_encoding));
+    r->pending_handle.EncodeTo(&handle_encoding); //将当前data_block的offset和size添加到handle_encodeing字符串中
+    r->index_block.Add(r->last_key, Slice(handle_encoding));  //将data block添加到数据索引处（index block内）
     r->pending_index_entry = false;
   }
 
   if (r->filter_block != NULL) {
     r->filter_block->AddKey(key);
   }
-
+  //更新last_key的内容为当前的key
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;
   r->data_block.Add(key, value);
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
+  //如果data_block的个数超过限制，就立刻flush到文件中
   if (estimated_block_size >= r->options.block_size) {
     Flush();
   }
@@ -143,7 +144,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   //    crc: uint32
   assert(ok());
   Rep* r = rep_;
-  Slice raw = block->Finish();
+  Slice raw = block->Finish();  //将重启点的信息和个数放到buffer中，并返回给raw中
 
   Slice block_contents;
   CompressionType type = r->options.compression;
@@ -176,10 +177,12 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type,
                                  BlockHandle* handle) {
   Rep* r = rep_;
+
+  //offset表示要写入的data block在sstable文件中的偏移
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
   r->status = r->file->Append(block_contents);
-  if (r->status.ok()) {
+  if (r->status.ok()) {  //写入1 byte的type和4bytes的crc32
     char trailer[kBlockTrailerSize];
     trailer[0] = type;
     uint32_t crc = crc32c::Value(block_contents.data(), block_contents.size());
@@ -198,7 +201,7 @@ Status TableBuilder::status() const {
 
 Status TableBuilder::Finish() {
   Rep* r = rep_;
-  Flush();
+  Flush();  //首先调用flush（），将最后一块data block写入
   assert(!r->closed);
   r->closed = true;
 
@@ -207,7 +210,7 @@ Status TableBuilder::Finish() {
   // Write filter block
   if (ok() && r->filter_block != NULL) {
     WriteRawBlock(r->filter_block->Finish(), kNoCompression,
-                  &filter_block_handle);
+                  &filter_block_handle);  //将filter_block的offset和size信息赋予filter_block_handle中相应的变量
   }
 
   // Write metaindex block
@@ -218,7 +221,7 @@ Status TableBuilder::Finish() {
       std::string key = "filter.";
       key.append(r->options.filter_policy->Name());
       std::string handle_encoding;
-      filter_block_handle.EncodeTo(&handle_encoding);
+      filter_block_handle.EncodeTo(&handle_encoding);  //将filter_block_handle的offset信息和size信息添加到handle_endcoding字符串
       meta_index_block.Add(key, handle_encoding);
     }
 
@@ -228,11 +231,11 @@ Status TableBuilder::Finish() {
 
   // Write index block
   if (ok()) {
-    if (r->pending_index_entry) {
+    if (r->pending_index_entry) {  //如果是data block的第一个
       r->options.comparator->FindShortSuccessor(&r->last_key);
       std::string handle_encoding;
       r->pending_handle.EncodeTo(&handle_encoding);
-      r->index_block.Add(r->last_key, Slice(handle_encoding));
+      r->index_block.Add(r->last_key, Slice(handle_encoding));  //加入到index block中
       r->pending_index_entry = false;
     }
     WriteBlock(&r->index_block, &index_block_handle);

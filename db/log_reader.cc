@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/log_reader.h"
+#include "../db/log_reader.h"
 
 #include <stdio.h>
-#include "leveldb/env.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../include/leveldb/env.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
 namespace leveldb {
 namespace log {
@@ -39,10 +39,10 @@ bool Reader::SkipToInitialBlock() {
   // Don't search a block if we'd be in the trailer
   if (offset_in_block > kBlockSize - 6) {
     offset_in_block = 0;
-    block_start_location += kBlockSize;
+    block_start_location += kBlockSize; //指向下一块的地址，这就可以解释为什么要initial_offset_ % kBlockSize;
   }
-
-  end_of_buffer_offset_ = block_start_location;
+  //调整的目的就是保证读取日志的时候读取的完整的bolck
+  end_of_buffer_offset_ = block_start_location; //当前的读取偏移
 
   // Skip to start of first block that can contain the initial record
   if (block_start_location > 0) {
@@ -149,7 +149,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
         break;
 
       default: {
-        char buf[40];
+        char buf[40];		
         snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
         ReportCorruption(
             (fragment.size() + (in_fragmented_record ? scratch->size() : 0)),
@@ -159,9 +159,9 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
         break;
       }
     }
-  }
+  }//end while
   return false;
-}
+} //end ReadRecord
 
 uint64_t Reader::LastRecordOffset() {
   return last_record_offset_;

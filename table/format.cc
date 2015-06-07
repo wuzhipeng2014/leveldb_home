@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/format.h"
+#include <assert.h>
+#include "../include/leveldb/status.h"
+#include "../table/format.h"
 
-#include "leveldb/env.h"
-#include "port/port.h"
-#include "table/block.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../include/leveldb/env.h"
+#include "../port/port.h"
+#include "../table/block.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
 namespace leveldb {
 
@@ -63,6 +65,8 @@ Status Footer::DecodeFrom(Slice* input) {
   return result;
 }
 
+//根据handle指定的偏移和大小，读取block的内容，type和crc32值，
+//其中常量kBlockTrailerSize=5= 1byte的type和4bytes的crc32。
 Status ReadBlock(RandomAccessFile* file,
                  const ReadOptions& options,
                  const BlockHandle& handle,
