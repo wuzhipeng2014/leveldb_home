@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/filter_policy.h"
+#include "../include/leveldb/filter_policy.h"
 
-#include "leveldb/slice.h"
-#include "util/hash.h"
+#include "../include/leveldb/slice.h"
+#include "../util/hash.h"
 
 namespace leveldb {
 
@@ -16,8 +16,8 @@ static uint32_t BloomHash(const Slice& key) {
 
 class BloomFilterPolicy : public FilterPolicy {
  private:
-  size_t bits_per_key_;
-  size_t k_;
+  size_t bits_per_key_;  //hash table 的大小
+  size_t k_;  // 哈希函数的个数
 
  public:
   explicit BloomFilterPolicy(int bits_per_key)
@@ -47,14 +47,15 @@ class BloomFilterPolicy : public FilterPolicy {
     dst->resize(init_size + bytes, 0);
     dst->push_back(static_cast<char>(k_));  // Remember # of probes in filter
     char* array = &(*dst)[init_size];
+	//对于每个key，使用double-hashing生产一系列的hash值h(K_个)，设置bits array的第h位=1。
     for (size_t i = 0; i < n; i++) {
       // Use double-hashing to generate a sequence of hash values.
       // See analysis in [Kirsch,Mitzenmacher 2006].
       uint32_t h = BloomHash(keys[i]);
       const uint32_t delta = (h >> 17) | (h << 15);  // Rotate right 17 bits
-      for (size_t j = 0; j < k_; j++) {
+      for (size_t j = 0; j < k_; j++) {  //设置hash table的相应位
         const uint32_t bitpos = h % bits;
-        array[bitpos/8] |= (1 << (bitpos % 8));
+        array[bitpos/8] |= (1 << (bitpos % 8));  //将bitpos/8指定位置处的值置为1
         h += delta;
       }
     }
@@ -80,6 +81,7 @@ class BloomFilterPolicy : public FilterPolicy {
     const uint32_t delta = (h >> 17) | (h << 15);  // Rotate right 17 bits
     for (size_t j = 0; j < k; j++) {
       const uint32_t bitpos = h % bits;
+	  //只要有一个结果对应的bit位为0，就认为不匹配，否则认为匹配。
       if ((array[bitpos/8] & (1 << (bitpos % 8))) == 0) return false;
       h += delta;
     }
