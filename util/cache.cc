@@ -6,10 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "leveldb/cache.h"
-#include "port/port.h"
-#include "util/hash.h"
-#include "util/mutexlock.h"
+#include "../include/leveldb/slice.h"
+#include "../include/leveldb/cache.h"
+#include "../port/port.h"
+#include "../util/hash.h"
+#include "../util/mutexlock.h"
 
 namespace leveldb {
 
@@ -55,7 +56,7 @@ class HandleTable {
   HandleTable() : length_(0), elems_(0), list_(NULL) { Resize(); }
   ~HandleTable() { delete[] list_; }
 
-  LRUHandle* Lookup(const Slice& key, uint32_t hash) {
+  LRUHandle * Lookup(const Slice& key, uint32_t hash) {
     return *FindPointer(key, hash);
   }
 
@@ -217,7 +218,7 @@ Cache::Handle* LRUCache::Lookup(const Slice& key, uint32_t hash) {
   return reinterpret_cast<Cache::Handle*>(e);
 }
 
-void LRUCache::Release(Cache::Handle* handle) {
+void LRUCache::Release(Cache::Handle * handle) {
   MutexLock l(&mutex_);
   Unref(reinterpret_cast<LRUHandle*>(handle));
 }
@@ -300,10 +301,10 @@ class ShardedLRUCache : public Cache {
     return shard_[Shard(hash)].Lookup(key, hash);
   }
   virtual void Release(Handle* handle) {
-    LRUHandle* h = reinterpret_cast<LRUHandle*>(handle);
+    LRUHandle * h = reinterpret_cast<LRUHandle*>(handle);
     shard_[Shard(h->hash)].Release(handle);
   }
-  virtual void Erase(const Slice& key) {
+  virtual void Erase(const Slice & key) {
     const uint32_t hash = HashSlice(key);
     shard_[Shard(hash)].Erase(key, hash);
   }

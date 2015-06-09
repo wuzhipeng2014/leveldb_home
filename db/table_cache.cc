@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/table_cache.h"
+#include "../db/table_cache.h"
 
-#include "db/filename.h"
-#include "leveldb/env.h"
-#include "leveldb/table.h"
-#include "util/coding.h"
+#include "../db/filename.h"
+#include "../include/leveldb/env.h"
+#include "../include/leveldb/table.h"
+#include "../util/coding.h"
 
 namespace leveldb {
 
@@ -42,6 +42,7 @@ TableCache::~TableCache() {
   delete cache_;
 }
 
+//从table cache中根据file_number查找指定的table，将找到的结果存储在handle指向的指针中
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
   Status s;
@@ -49,12 +50,13 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
   EncodeFixed64(buf, file_number);
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
-  if (*handle == NULL) {
-    std::string fname = TableFileName(dbname_, file_number);
+  if (*handle == NULL) { //如果在cache中没有找到table，则根据file_number和dbnmae_打开一个RadomAccessFile
+   //fname的格式为：<db name>.<filenumber(%6u)>.sst
+	  std::string fname = TableFileName(dbname_, file_number);
     RandomAccessFile* file = NULL;
     Table* table = NULL;
     s = env_->NewRandomAccessFile(fname, &file);
-    if (!s.ok()) {
+    if (!s.ok()) { 
       std::string old_fname = SSTTableFileName(dbname_, file_number);
       if (env_->NewRandomAccessFile(old_fname, &file).ok()) {
         s = Status::OK();
@@ -73,6 +75,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
       TableAndFile* tf = new TableAndFile;
       tf->file = file;
       tf->table = table;
+	  //将找到的table插入到cache中
       *handle = cache_->Insert(key, tf, 1, &DeleteEntry);
     }
   }
@@ -88,13 +91,15 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   }
 
   Cache::Handle* handle = NULL;
+  //从cache对象中取出table对象指针
   Status s = FindTable(file_number, file_size, &handle);
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
-
   Table* table = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
+  //调用table的newiterator函数返回iterator对象
   Iterator* result = table->NewIterator(options);
+  //为iterator注册一个clearup函数
   result->RegisterCleanup(&UnrefEntry, cache_, handle);
   if (tableptr != NULL) {
     *tableptr = table;
@@ -102,6 +107,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   return result;
 }
 
+//这是一个查找函数，如果在指定文集爱你中seek到internal key （k），就调用saver指定的函数
 Status TableCache::Get(const ReadOptions& options,
                        uint64_t file_number,
                        uint64_t file_size,
@@ -118,6 +124,7 @@ Status TableCache::Get(const ReadOptions& options,
   return s;
 }
 
+//该函数用以清除指定文件所有cache的entry，就是根据file number清除chache对象
 void TableCache::Evict(uint64_t file_number) {
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);

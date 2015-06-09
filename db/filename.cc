@@ -4,10 +4,10 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include "db/filename.h"
-#include "db/dbformat.h"
-#include "leveldb/env.h"
-#include "util/logging.h"
+#include "../db/filename.h"
+#include "../db/dbformat.h"
+#include "../include/leveldb/env.h"
+#include "../util/logging.h"
 
 namespace leveldb {
 
@@ -18,6 +18,7 @@ extern Status WriteStringToFileSync(Env* env, const Slice& data,
 static std::string MakeFileName(const std::string& name, uint64_t number,
                                 const char* suffix) {
   char buf[100];
+  //将可变个参数(...)按照format格式化成字符串，然后将其复制到buf中
   snprintf(buf, sizeof(buf), "/%06llu.%s",
            static_cast<unsigned long long>(number),
            suffix);

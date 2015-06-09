@@ -9,10 +9,10 @@
 
 #include <string>
 #include <stdint.h>
-#include "db/dbformat.h"
-#include "leveldb/cache.h"
-#include "leveldb/table.h"
-#include "port/port.h"
+#include "../db/dbformat.h"
+#include "../include/leveldb/cache.h"
+#include "../include/leveldb/table.h"
+#include "../port/port.h"
 
 namespace leveldb {
 
@@ -48,10 +48,10 @@ class TableCache {
   void Evict(uint64_t file_number);
 
  private:
-  Env* const env_;
-  const std::string dbname_;
-  const Options* options_;
-  Cache* cache_;
+  Env* const env_;  //用来操作文件
+  const std::string dbname_; //db名字
+  const Options* options_; //
+  Cache* cache_;  //LRUCache
 
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 };
