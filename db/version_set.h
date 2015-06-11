@@ -18,10 +18,10 @@
 #include <map>
 #include <set>
 #include <vector>
-#include "db/dbformat.h"
-#include "db/version_edit.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
+#include "../db/dbformat.h"
+#include "../db/version_edit.h"
+#include "../port/port.h"
+#include "../port/thread_annotations.h"
 
 namespace leveldb {
 
@@ -129,6 +129,8 @@ class Version {
                           void* arg,
                           bool (*func)(void*, int, FileMetaData*));
 
+  //各个version之间通过version * prev 和*next指针构成了
+  //一个version双向循环链表，表头指针在versionset中
   VersionSet* vset_;            // VersionSet to which this Version belongs
   Version* next_;               // Next version in linked list
   Version* prev_;               // Previous version in linked list

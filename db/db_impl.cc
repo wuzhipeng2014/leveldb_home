@@ -1131,7 +1131,8 @@ Status DBImpl::Get(const ReadOptions& options,
   current->Unref();
   return s;
 }
-
+// 返回heap分配的iterator，访问db的内容，返回的iterator的位置是invalid的  
+// 在使用之前，调用者必须先调用Seek。  
 Iterator* DBImpl::NewIterator(const ReadOptions& options) {
   SequenceNumber latest_snapshot;
   uint32_t seed;
@@ -1151,11 +1152,14 @@ void DBImpl::RecordReadSample(Slice key) {
   }
 }
 
+// 返回当前db状态的handle，和handle一起创建的Iterator看到的都是  
+// 当前db状态的稳定快照。不再使用时，应该调用ReleaseSnapshot(result)  
 const Snapshot* DBImpl::GetSnapshot() {
   MutexLock l(&mutex_);
   return snapshots_.New(versions_->LastSequence());
 }
 
+// 释放获取的db快照  
 void DBImpl::ReleaseSnapshot(const Snapshot* s) {
   MutexLock l(&mutex_);
   snapshots_.Delete(reinterpret_cast<const SnapshotImpl*>(s));

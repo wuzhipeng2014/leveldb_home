@@ -8,7 +8,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include "db/dbformat.h"
+#include "../db/dbformat.h"
 
 namespace leveldb {
 
@@ -25,6 +25,11 @@ struct FileMetaData {
   FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) { }
 };
 
+//versionedit并不操作文件，只是为manifest文集爱你读写准备好数据，
+//从读取的数据中解析出DB元信息，versionEdit有两个作用
+//1. 当版本间有增量变动时，versionedit记录了这种变动
+//2. 写入到manifest时，先将current version的db元信息保存到一个versionedit中，
+//然后组织成一个log record写入文件
 class VersionEdit {
  public:
   VersionEdit() { Clear(); }
@@ -59,6 +64,8 @@ class VersionEdit {
   // Add the specified file at the specified number.
   // REQUIRES: This version has not been saved (see VersionSet::SaveTo)
   // REQUIRES: "smallest" and "largest" are smallest and largest keys in file
+  //@level： .sst文件层次，@file 文件编号，用作文件名 @size文件大小
+  //@smallest，@largest： sst文件包含的k/v对的最大最小值
   void AddFile(int level, uint64_t file,
                uint64_t file_size,
                const InternalKey& smallest,
